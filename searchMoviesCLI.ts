@@ -23,21 +23,20 @@ async function main() {
             default:
                 console.log("Quitting...")
                 quit = true
-                break;
         }
     }
     await client.end();
 }
 
 async function searchMovie() {
-    const searchString = question("Search for a movie: ").toLowerCase()
+    const searchString = question("Search for a movie or person: ").toLowerCase()
     if (searchString === '' || searchString === ' ') {
         console.log('Search term was empty.')
     } else {
         const searchStringFirstLetterUppercase = searchString[0].toUpperCase() + searchString.slice(1)
         console.log(`Searching for '${searchString}':`)
 
-        const text = "SELECT id, name, date, runtime, budget, revenue, vote_average, votes_count FROM movies WHERE name LIKE $1 OR NAME LIKE $2 AND kind = $3 ORDER BY date DESC LIMIT 9"
+        const text = "SELECT movie_id, movie_name, date, runtime, person_name AS lead_actor, budget, revenue, vote_average, votes_count FROM casts_view WHERE movie_name LIKE $1 OR movie_name LIKE $2 AND person_name LIKE $1 OR person_name LIKE $2 AND kind = $3 AND position = 1 ORDER BY date DESC LIMIT 9"
         const values = [`%${searchString}%`, `%${searchStringFirstLetterUppercase}%`, 'movie']
         const res = await client.query(text, values)
         console.table(res.rows)
@@ -55,9 +54,8 @@ async function addToFavourites(res: QueryResult) {
         const movieIdToAdd = res.rows[favIndexOption].id
         const text = "INSERT INTO favourites (movie_id) VALUES ($1)"
         const values = [movieIdToAdd]
-        console.log("Working before query")
+        console.log(`Adding ${res.rows[favIndexOption].name} to your favourites.`)
         await client.query(text, values)
-        console.log("Working after query")
         console.log(`${res.rows[favIndexOption].name} was added to your favourites.`)
     } else {
         console.log("No movie was added to your favourites.")
@@ -72,11 +70,3 @@ async function seeFavourities() {
 }
 
 main()
-
-async function doDemo() {
-    const client = new Client({ database: 'musicbase' });
-    await client.connect();
-    const res = await client.query("SELECT * from artists");
-    console.log(res.rows);
-    await client.end();
-  }
